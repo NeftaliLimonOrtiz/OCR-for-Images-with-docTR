@@ -1,5 +1,6 @@
 import os
 import cv2
+import re
 import numpy as np
 from doctr.io import DocumentFile
 from doctr.models import ocr_predictor
@@ -212,15 +213,33 @@ def table_to_text(table):
             lines.append("-+-".join("-" * w for w in widths))
     return lines
 
-def process_pdf(pdf_path, model):
+def count_valid_words(words):
+    return sum(
+        1 for w in words
+        if re.search(r"[A-Za-zÀ-ÿ]{2,}", w["text"])
+    )
+
+def process_pdf(pdf_path, model, min_words=50):
     print(f"\nProcesando: {pdf_path}")
     doc = DocumentFile.from_pdf(pdf_path)
-    pages = model(doc).export()["pages"]
     all_text = []
-
-    for page_idx, (img, page_data) in enumerate(zip(doc, pages), 1):
+    for page_idx, img in enumerate(doc, 1):
+        page_data = model([img]).export()["pages"][0]
         h, w = img.shape[:2]
         words = collect_words(page_data, w, h)
+
+        if count_valid_words(words) < 10:
+            rotated = cv2.rotate(img, cv2.ROTATE_90_CLOCKWISE)
+            page_data_rot = model([rotated]).export()["pages"][0]
+            h2, w2 = rotated.shape[:2]
+            words_rot = collect_words(page_data_rot, w2, h2)
+
+            # 👇 comparar calidad
+            if count_valid_words(words_rot) > count_valid_words(words):
+                img = rotated
+                page_data = page_data_rot
+                words = words_rot
+
         regions = detect_table_regions(img)
         blocks, valid_regions = [], []
 
@@ -264,7 +283,6 @@ def process_pdf(pdf_path, model):
     out = os.path.join(OUTPUT_DIR, os.path.splitext(os.path.basename(pdf_path))[0] + ".txt")
     open(out, "w", encoding="utf-8").write("\n".join(all_text))
     print(f"Save: {out}")
-
 
 def main():
     pdfs = ([PDF_PATH] if os.path.isfile(PDF_PATH)
