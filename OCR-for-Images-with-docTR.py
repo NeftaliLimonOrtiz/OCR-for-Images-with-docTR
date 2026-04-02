@@ -234,7 +234,6 @@ def process_pdf(pdf_path, model, min_words=50):
             h2, w2 = rotated.shape[:2]
             words_rot = collect_words(page_data_rot, w2, h2)
 
-            # 👇 comparar calidad
             if count_valid_words(words_rot) > count_valid_words(words):
                 img = rotated
                 page_data = page_data_rot
