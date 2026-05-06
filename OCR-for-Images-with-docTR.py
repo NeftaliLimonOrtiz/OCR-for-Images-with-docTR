@@ -4,8 +4,8 @@ import numpy as np
 from doctr.io import DocumentFile
 from doctr.models import ocr_predictor
 
-PDF_PATH = "prueba"
-OUTPUT_DIR = "outputs"
+PDF_PATH = "input"
+OUTPUT_DIR = "output"
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 
 def merge_close(values, gap=10):
