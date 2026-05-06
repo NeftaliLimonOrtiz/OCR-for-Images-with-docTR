@@ -29,5 +29,5 @@ OUTPUT_DIR = "path/to/output/folder"
 Then run:
 
 ```bash
-python main.py
+python OCR-for-Images-with-docTR.py
 ```
